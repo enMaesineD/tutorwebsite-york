@@ -19,6 +19,19 @@ class User(db.Model, UserMixin):
 
     parent_email = db.Column(db.String(150))
 
+class UserToSubjects(db.Model, UserMixin):
+    id = db.Column(db.Integer, primary_key=True)
+    userId = db.Column(db.Integer)
+    subjectId = db.Column(db.Integer)
+    role = db.Column(db.Integer)
+
+class Subjects(db.Model, UserMixin):
+    id = db.Column(db.Integer, primary_key=True)
+    # code = db.Column(db.String(20), unique=True)
+    name = db.Column(db.String(150), unique=True)
+    status = db.Column(db.Integer)
+
+
 class Pairs(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     tutor_id = db.Column(db.Integer) # to add foreign key constrain
