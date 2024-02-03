@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify
-from .models import User, Pairs
+from .models import User, Pairs, Subjects, UserToSubjects
 from werkzeug.security import generate_password_hash, check_password_hash
 from.import db
 from flask_login import login_user, login_required, logout_user, current_user
@@ -11,11 +11,6 @@ def login():
     if request.method == 'POST':
         email = request.form.get('email')
         password = request.form.get('password')
-
-        # new_user = User(email="admin@gmail.com", first_name="Admin", last_name="Admin",
-        #                 password=generate_password_hash("123456", method='sha256'), role=3)
-        # db.session.add(new_user)
-        # db.session.commit()
 
         user = User.query.filter_by(email=email).first()
 
@@ -79,7 +74,7 @@ def sign_up_tutee():
         else:
             # add user to database
 
-            new_user = User(email=email, first_name=first_name, last_name=last_name, password=generate_password_hash(password1,method='sha256'), role=role, grade=grade, parent_email=parent_email, subject1=subject1, subject2=subject2, subject3=subject3, subject4=subject4, subject5=subject5)
+            new_user = User(email=email, first_name=first_name, last_name=last_name, password=generate_password_hash(password1, method='pbkdf2:sha256'), role=role, grade=grade, parent_email=parent_email, subject1=subject1, subject2=subject2, subject3=subject3, subject4=subject4, subject5=subject5)
             db.session.add(new_user)
             db.session.commit()
             login_user(new_user, remember=True)
@@ -126,6 +121,8 @@ def sign_up_tutee():
 
 @auth.route('/sign_up_tutor', methods=['GET','POST'])
 def sign_up_tutor():
+    subject_list = Subjects.query.filter_by(status=1).all()
+
     if request.method == 'POST':
         email = request.form.get('email')
         first_name = request.form.get('firstName')
@@ -134,7 +131,12 @@ def sign_up_tutor():
         password2 = request.form.get('password2')
         role = 2
         grade = request.form.get('grade')
-        subject = request.form.get('subject')
+
+        checked_subjects = []
+        for subject in subject_list:
+            is_subject = request.form.get(subject.id)
+            if is_subject:
+                checked_subjects.append(subject)
 
         parent_email = request.form.get('parent_email')
         user = User.query.filter_by(email=email).first()
@@ -150,7 +152,7 @@ def sign_up_tutor():
             flash('Passwords don\'t match.', category='error')
         elif len(password1) < 7:
             flash('Password must be at least 7 characters', category='error')
-        elif len(subject) < 1:
+        elif checked_subjects.length() < 1:
             flash('Please input a subject you would like to tutor', category='error')
         elif len(parent_email) < 1:
             flash('Please input your parent email', category='error')
@@ -160,6 +162,12 @@ def sign_up_tutor():
             new_user = User(email=email, first_name=first_name, last_name=last_name, password=generate_password_hash(password1,method='sha256'), role=role, grade=grade, parent_email=parent_email, subject1=subject)
             db.session.add(new_user)
             db.session.commit()
+
+            for subject in checked_subjects:
+                new_user_to_subject = UserToSubjects(userId=new_user.id, subjectId=subject.id, role=2)
+                db.session.add(new_user_to_subject)
+                db.session.commit()
+
             login_user(new_user, remember=True)
 
             u = Utils()
